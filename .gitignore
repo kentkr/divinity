@@ -12,3 +12,5 @@ scripts/scratch/*
 
 # env variables
 .env.ini
+
+.DS_Store
