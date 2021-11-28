@@ -1,0 +1,14 @@
+# data
+data/*
+
+# output files
+output/*
+
+# regular files
+files/*
+
+# scratch scripts
+scripts/scratch/*
+
+# env variables
+.env.ini
