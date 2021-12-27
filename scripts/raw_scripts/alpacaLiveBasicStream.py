@@ -28,4 +28,4 @@ stream = Stream(ALPACA_API_KEY,
 stream.subscribe_trades(trade_callback, 'AAPL')
 stream.subscribe_quotes(quote_callback, 'IBM')
 
-stream.run()
+print(stream.run())

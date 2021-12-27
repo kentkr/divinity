@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/anaconda3/envs/ipy37/bin/python3
 
 # submit basic order using prophet
 
@@ -94,12 +94,18 @@ positions = api.list_positions()
 cash = float(account.cash)
 buy_shares = int(cash/y)
 
+print(cash)
+print(y)
+print(cash/y)
 # if signal is buy
-if signal == 'buy':
-    # get amount of stock buyable
-    buy_shares = cash/y
-    api.submit_order('TSLA', qty = buy_shares, side = 'buy')
-    print('{} shares bought'.format(buy_shares))
+try:
+    if signal == 'buy':
+        # get amount of stock buyable
+        buy_shares = float(cash/y)
+        api.submit_order('TSLA', qty = buy_shares, side = 'buy')
+        print('{} shares bought'.format(buy_shares))
+except:
+    pass
 
 # if signal is sell
 if signal == 'sell':
