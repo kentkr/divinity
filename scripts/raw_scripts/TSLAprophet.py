@@ -12,9 +12,6 @@ import pytz
 from dateutil.relativedelta import relativedelta
 import yfinance as yf
 
-# wd
-os.chdir('/Users/kylekent/Dropbox/algo_alpaca/')
-
 # load data ---------------------------------------------------------------------
 
 # days from Jan 1 2015 - Jul 30 2021
@@ -22,22 +19,26 @@ from_day = '2015-01-01'
 to_day = '2021-07-31'
 
 # TSLA for 5 years
-tsla = yf.download(tickers = 'TSLA', start = from_day, end = to_day, interval = '1d')
-gspc = yf.download(tickers = '^GSPC', start = from_day, end = to_day, interval = '1d')
-dji = yf.download(tickers = '^DJI', start = from_day, end = to_day, interval = '1d')
+tsla = yf.download(tickers = 'TSLA', start = '2021-01-06', end = '2022-01-07', interval = '1h')
+gspc = yf.download(tickers = '^GSPC', start = '2021-01-06', end = '2022-01-07', interval = '1h')
+dji = yf.download(tickers = '^DJI', start = '2021-01-06', end = '2022-01-07', interval = '1h')
 
-xx = tsla.copy()
 # function to change names, get close price
 def process_yf(data, ticker):
     data.reset_index(inplace = True)
+    data.columns.values[0] = 'date'
     data.insert(0, 'symbol', ticker)
     data.columns = data.columns.str.lower()
     data = data[['symbol', 'date', 'close']]
     data.copy().loc[:, 'date'] = pd.to_datetime(data['date']).copy()
+    print(data['date'].dtype)
+    data['date'] = data['date'].dt.tz_localize(None)
+    print(data['date'].dtype)
     return(data)
 
 # process data
 tsla = process_yf(tsla, 'TSLA')
+print(tsla)
 gspc = process_yf(gspc, 'GSPC')
 dji = process_yf(dji, 'DJI')
 
@@ -54,14 +55,14 @@ modelData['ds'] = pd.to_datetime(modelData['ds'])
 
 # for loop one year moving prediction --------------------------------------------
 
-def backtest(modelData, years = 1, pred_periods = 0):
+def backtest(modelData, model_period = 5, pred_periods = 0):
     # empty df
     out_data = pd.DataFrame()
     # for row of model data except the last 252 (one year)
-    for i in range(len(modelData)-1, 252, -1):
+    for i in range(len(modelData)-1, -1, -1):
         # identify day of iteration and get one year prior
         iter_day = modelData.loc[i, 'ds']
-        one_year = iter_day - relativedelta(years = years)
+        one_year = iter_day - relativedelta(days = 20)
         # define data set
         fit_data = modelData[(modelData['ds'] <= iter_day) & (modelData['ds'] >= one_year)]
         # instantiate prophet model
@@ -79,7 +80,7 @@ def backtest(modelData, years = 1, pred_periods = 0):
         out_data = out_data.append(new_data)
         print(out_data)
     # save data
-    out_data.to_csv('output/v0.0.1_backtest.csv')
+    out_data.to_csv('output/tmp.csv')
 
 tsla_backtest = backtest(modelData)
 
@@ -91,10 +92,10 @@ yhat_upper = new_data['yhat_upper'][0]
 # if upper CI between previous and current value then buy
 if (prev > yhat_upper) & (cur < yhat_upper):
     signal = 'sell'
-if else (prev < yhat_lower) & (cur > yhat_upper):
-    signal = 'buy'
-else:
-    signal = 'stay'
+#if else (prev < yhat_lower) & (cur > yhat_upper):
+#    signal = 'buy'
+#else:
+#    signal = 'stay'
 # add signal
 new_data['signal'] = signal
 # price delta

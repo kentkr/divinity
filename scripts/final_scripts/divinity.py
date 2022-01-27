@@ -188,9 +188,9 @@ def main():
         # get data
         data = getData(start_date = from_day, end_date = to_day, args = args)
         # fit model
-        fit_data = fitModel(data, args = args)
+        fit_data = fitModel(data)
         # define signal
-        signal = prophetCross(data = fit_data, MA = 'simple', fast = 2, slow = 4, args = args)
+        signal = prophetCross(data = fit_data, MA = 'simple', fast = 3, slow = 7, args = args)
         #dataVis(final_data, args = args)
         makeAction(signal, args = args)
     # backtest model
