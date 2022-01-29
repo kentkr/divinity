@@ -1,4 +1,4 @@
-#!/usr/local/anaconda3/envs/ipy37/bin/python3
+#!/usr/bin/python3
 
 import argparse
 import yfinance as yf
@@ -112,7 +112,7 @@ def prophetCross(data, fast, slow, args, MA = 'simple'):
 def makeAction(signal, args):
     # load api keys
     config = ConfigParser()
-    config.read('/Users/kylekent/Dropbox/divinity/.env.ini')
+    config.read('/Users/kylekent/Library/CloudStorage/Dropbox/divinity/.env.ini')
     # use live api or paper api
     if args.live == True:
         print('Using live alpaca account')
@@ -184,6 +184,7 @@ def main():
         # dates
         to_day = datetime.today() - relativedelta(days = 1)
         to_day = to_day.replace(hour = 15, minute = 59, second = 59)
+        print(to_day)
         from_day = to_day - relativedelta(years = 1)
         # get data
         data = getData(start_date = from_day, end_date = to_day, args = args)
