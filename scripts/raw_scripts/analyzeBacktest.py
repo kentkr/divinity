@@ -1,10 +1,11 @@
-#!/usr/local/anaconda3/envs/ipy37/bin/python3
+#!/usr/bin/python3
 
 import argparse
 import pandas as pd
 from matplotlib import pyplot as plt
 import pandas_ta as ta
 import numpy as np
+import code
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -25,15 +26,17 @@ def parseArgs():
     return args
 
 def dataVis(data, args):
-   plt.scatter('ds', 'y', data = data, color = 'black')
-   plt.plot('ds', 'yhat', data = data)
-   plt.plot('ds', 'maSlow', data = data)
-   plt.plot('ds', 'maFast', data = data)
-   plt.fill_between('ds', 'yhat_lower', 'yhat_upper', data = data, alpha = .5)
-   plt.show()
-   plt.close()
+    print(data)
+    plt.scatter('ds', 'y', data = data, color = 'black')
+    plt.plot('ds', 'yhat', data = data)
+    plt.plot('ds', 'maSlow', data = data)
+    plt.plot('ds', 'maFast', data = data)
+    plt.fill_between('ds', 'yhat_lower', 'yhat_upper', data = data, alpha = .5)
+    plt.show()
+    plt.close()
 
 def prophetCross(data, fast, slow, args, MA = 'simple'):
+    print(data)
     # what type of moving average
     if MA == 'simple':
         data['maSlow'] = ta.sma(data['y'], length = fast)
@@ -70,9 +73,16 @@ args = parseArgs()
 
 # load data
 #df = pd.read_csv('output/backtestv0.0.2{}2019-01-012021-12-29.csv'.format(args.ticker))
-df = pd.read_csv('output/tmp.csv')
+df = pd.read_csv('output/backtestv0.0.2TSLA2019-01-012021-12-29.csv')
 df['ds'] = pd.to_datetime(df['ds'])
-print(df.dtypes)
 
-print(np.log(4))
 prophetCross(df, fast = 5, slow = 15, args = args, MA = 'simple')
+def main():
+    df = pd.read_csv('output/backtestv0.0.2TSLA2018-01-012022-01-28.csv')
+    df.columns.values[0] = 'indexValue'
+    df['ds'] = pd.to_datetime(df['ds'])
+    df = df.reindex(index=df.index[::-1])
+    prophetCross(df, fast = 3, slow = 7, args = args, MA = 'simple')
+    code.interact(local = dict(globals(), **locals()))
+
+main()

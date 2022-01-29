@@ -154,7 +154,7 @@ def backtest(modelData, args, fit_years = 1, pred_periods = 0):
     out_data = pd.DataFrame()
     # for row of model data except the last 252 (one year)
     for i in range(len(modelData)-1, 252, -1):
-        print(i)
+        print('{}/{}'.format(i, len(modelData)))
         # identify day of iteration and get one year prior
         iter_day = modelData.loc[i, 'ds']
         one_year = iter_day - relativedelta(years = fit_years)
