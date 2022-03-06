@@ -33,6 +33,7 @@ def parseArgs():
 
 def getData(start_date, end_date, args):
     data = yf.download(args.ticker, start_date, end_date, interval = '1d')
+    print(data)
     data.reset_index(inplace = True)
     data.columns = data.columns.str.lower()
     data = data[['date', 'close']]
