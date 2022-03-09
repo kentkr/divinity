@@ -163,7 +163,7 @@ def main():
     plt.plot('ds', 'benchmarkValue', data = df)
     plt.plot('ds', 'stratValue', data = df)
     plt.show()
-    plot.close()
+    plt.close()
     if args.interactive == True:
         code.interact(local = dict(globals(), **locals()))
 

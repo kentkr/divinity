@@ -52,21 +52,28 @@ def fitModel(data, pred_periods = 0):
     final['y'] = data['y']
     return final
 
-#def defineSignal(data):
-#    # most recent values
-#    y = data.iloc[-1]['y']
-#    upper = data.iloc[-1]['yhat_upper']
-#    lower = data.iloc[-1]['yhat_lower']
-#    # yesterdays value
-#    ym1 = data.iloc[-2]['y']
-#    # buy 
-#    if (ym1 < lower) & (y > lower):
-#        signal = 'buy'
-#    elif (ym1 > upper) & (y < upper):
-#        signal = 'sell'
-#    else:
-#        signal = 'stay'
-#    return signal
+def edge_intersection(x1: int, y1: int, x2: int, y2: int, x3: int, y3: int, x4: int, y4: int) -> list:
+    # None of lines' length could be 0.
+    if (((x1 == x2) & (y1 == y2)) | ((x3 == x4) & (y3 == y4))):
+        return []
+    # The denominators for the equations for ua and ub are the same.
+    den = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+    # Lines are parallel when denominator equals to 0,
+    # No intersection point
+    if den == 0:
+        return []
+    # Avoid the divide overflow
+    ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / (den + 1e-16)
+    ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / (den + 1e-16)
+    # if ua and ub lie between 0 and 1.
+    # Whichever one lies within that range then the corresponding line segment contains the intersection point.
+    # If both lie within the range of 0 to 1 then the intersection point is within both line segments.
+    if (ua < 0 or ua > 1 or ub < 0 or ub > 1):
+        return []
+    # Return a list with the x and y coordinates of the intersection
+    x = x1 + ua * (x2 - x1)
+    y = y1 + ua * (y2 - y1)
+    return [x, y]
 
 def dataVis(data, args):
    plt.scatter('ds', 'y', data = data, color = 'black')
@@ -74,41 +81,39 @@ def dataVis(data, args):
    plt.plot('ds', 'maSlow', data = data)
    plt.plot('ds', 'maFast', data = data)
    plt.fill_between('ds', 'yhat_lower', 'yhat_upper', data = data, alpha = .5)
+   plt.scatter('crossDate', 'crossY', data = data, color = 'red')
    plt.show()
    plt.close()
 
 def prophetCross(data, fast, slow, args, MA = 'simple'):
     # what type of moving average
     if MA == 'simple':
-        data['maSlow'] = ta.sma(data['y'], length = fast)
-        data['maFast'] = ta.sma(data['y'], length = slow)
+        data['maFast'] = ta.sma(data['y'], length = fast)
+        data['maSlow'] = ta.sma(data['y'], length = slow)
     if MA == 'exponential':
-        data['maSlow'] = ta.ema(data['y'], length = fast)
-        data['maFast'] = ta.ema(data['y'], length = slow)
-    if args.plot == True:
-        dataVis(data, args = args)
+        data['maFast'] = ta.ema(data['y'], length = fast)
+        data['maSlow'] = ta.ema(data['y'], length = slow)
+    # convert ds to unix timestamp for next step
+    data['ds'] = pd.to_datetime(data['ds']).astype(int)/10**9
+    # get intersections of points
+    crossList = []
+    for i in range(1, len(data)-1):
+        crossList.append(edge_intersection(data['ds'][i], data['maFast'][i], data['ds'][i+1], data['maFast'][i+1], data['ds'][i], data['maSlow'][i], data['ds'][i+1], data['maSlow'][i+1]))
+    crossDf = pd.DataFrame(crossList)
+    # add cross data to df
+    data['crossDate'] = crossDf.iloc[:,0]
+    data['crossY'] = crossDf.iloc[:,1]
+    # convert unix timestamps back to datetime
+    data['ds'] = pd.to_datetime(data['ds'], unit = 's')
+    data['crossDate'] = pd.to_datetime(data['crossDate'], unit = 's')
     # signal logic
-    yCurrent = data.iloc[-1]['y']
-    yPrevious = data.iloc[-2]['y']
-    prophet_upper = data.iloc[-1]['yhat_upper']
-    prophet_lower = data.iloc[-1]['yhat_lower']
-    maFastCurrent = data.iloc[-1]['maFast']
-    maFastPrevious = data.iloc[-2]['maFast']
-    maSlowCurrent = data.iloc[-1]['maSlow']
-    maSlowPrevious = data.iloc[-2]['maSlow']
-    # default signal stay
-    signal = 'stay'
-    if maFastPrevious > prophet_upper or maSlowPrevious > prophet_upper:
-        print('Yesterdays fast MA above CI, potential sell')
-        if (maFastCurrent < maSlowCurrent) and (maFastPrevious > maSlowPrevious):
-            signal = 'sell'
-    if maFastPrevious < prophet_lower or maSlowPrevious < prophet_lower:
-        print('Yesterdays fast MA below CI, potential buy')
-        if (maFastCurrent > maSlowCurrent) and (maFastPrevious < maSlowPrevious):
-            signal = 'buy'
-    print('Todays action is {}'.format(signal))
+    if data['yhat_upper'].iloc[-1] < data['crossY'].iloc[-1]:
+        signal = 'sell'
+    elif data['yhat_lower'].iloc[-1] > data['crossY'].iloc[-1]:
+        signal = 'buy'
+    else:
+        signal = 'stay'
     return signal
-
 
 def makeAction(signal, args):
     # load api keys
@@ -195,6 +200,9 @@ def main():
         signal = prophetCross(data = fit_data, MA = 'simple', fast = 3, slow = 7, args = args)
         #dataVis(final_data, args = args)
         makeAction(signal, args = args)
+        # plot
+        if args.plot == True:
+            dataVis(fit_data, args)
     # backtest model
     else:
         data = getData(args.btstartdate, args.btenddate, args = args)
