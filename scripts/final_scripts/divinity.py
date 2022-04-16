@@ -12,10 +12,12 @@ from matplotlib import pyplot as plt
 from configparser import ConfigParser
 import pandas_ta as ta
 import sys
+import os
 
 def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ticker', help = 'Specify a ticker for divinity to run on')
+    parser.add_argument('--test', action = 'store_true', help = 'Run the algorithm locally, and not on a paper or live account')
     parser.add_argument('--live', action = 'store_true', help = 'Make divinity run in the live account (default is paper)')
     parser.add_argument('--backtest', action = 'store_true', help = 'Make divinity run a backtest')
     parser.add_argument('--btstartdate', help = 'Make divinity run a backtest')
@@ -118,7 +120,7 @@ def prophetCross(data, fast, slow, args, MA = 'simple'):
 def makeAction(signal, args):
     # load api keys
     config = ConfigParser()
-    config.read('/Users/kylekent/Library/CloudStorage/Dropbox/divinity/.env.ini')
+    config.read(os.path.join(os.getcwd(), '.env.ini'))
     # use live api or paper api
     if args.live == True:
         print('Using live alpaca account')
@@ -188,8 +190,9 @@ def main():
     # run model in standard mode
     if args.backtest != True:
         # dates
-        to_day = datetime.today() - relativedelta(days = 1)
-        to_day = to_day.replace(hour = 15, minute = 59, second = 59)
+        #to_day = datetime.today() - relativedelta(days = 1)
+        to_day = datetime.today()
+        to_day = to_day.replace(hour = 15, minute = 30, second = 00)
         print(to_day)
         from_day = to_day - relativedelta(years = 1)
         # get data
@@ -198,8 +201,9 @@ def main():
         fit_data = fitModel(data)
         # define signal
         signal = prophetCross(data = fit_data, MA = 'simple', fast = 3, slow = 7, args = args)
-        #dataVis(final_data, args = args)
-        makeAction(signal, args = args)
+        # make an action if test is not true
+        if args.test == False:
+            makeAction(signal, args = args)
         # plot
         if args.plot == True:
             dataVis(fit_data, args)

@@ -17,6 +17,7 @@ def parseArgs():
     parser.add_argument('--btinterval', help = 'Make divinity run a backtest')
     parser.add_argument('--plot', action = 'store_true', help = 'Plot indicators')
     parser.add_argument('--interactive', action = 'store_true', help = 'Enter interactive console after running')
+    parser.add_argument('--write', action = 'store_true', help = 'Write backtest analysis to output folder')
     args = parser.parse_args()
     if args.backtest == True:
         if args.btstartdate is None or \
@@ -166,5 +167,7 @@ def main():
     plt.close()
     if args.interactive == True:
         code.interact(local = dict(globals(), **locals()))
+    if args.write == True:
+        df.to_csv('output/backtest{}Outcome.csv'.format(args.ticker))
 
 main()
