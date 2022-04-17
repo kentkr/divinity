@@ -11,7 +11,7 @@ Divinity is a trading algorithm I developed from scratch to improve my software 
 To install divinity on an OS or linux device then switch into the directory you'd like divinity to be in. Clone the repo then move into the `divinity` directory.
 
 ```
-https://github.com/kentkr/divinity
+git clone https://github.com/kentkr/divinity
 cd divinity
 ```
 
