@@ -200,7 +200,8 @@ def main():
         # fit model
         fit_data = fitModel(data)
         # define signal
-        signal = prophetCross(data = fit_data, MA = 'simple', fast = 3, slow = 7, args = args)
+        signal = prophetCross(data = fit_data, MA = 'simple', fast = 2, slow = 5, args = args)
+        print('===== Signal: {} ====='.format(signal))
         # make an action if test is not true
         if args.test == False:
             makeAction(signal, args = args)

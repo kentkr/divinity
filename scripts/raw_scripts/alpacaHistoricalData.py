@@ -21,7 +21,6 @@ api = REST('PKZ8UJHM6IRLYWQQVCQJ', 'B3Dytdnj8wLleBKYaBKhqHSZz54xWCv2E1V5NMRY')
 
 # get df of one symbol
 #xx = api.get_trades(sp500['Symbol'][27], "2021-07-09", "2021-07-09", limit=100).df
-
 to_day = datetime.now().date() - relativedelta(days = 1)
 from_day = to_day-relativedelta(years = 3)
 

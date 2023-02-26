@@ -153,7 +153,7 @@ def performance(data, start_value = 1000):
 
 def main():
     args = parseArgs()
-    df = pd.read_csv('output/backtestv0.0.2{}2016-01-012022-01-28.csv'.format(args.ticker))
+    df = pd.read_csv('output/backtestv0.0.2{}{}{}.csv'.format(args.ticker, args.btstartdate, args.btenddate))
     df.columns.values[0] = 'indexValue'
     df['ds'] = pd.to_datetime(df['ds'])
     df = df.reindex(index=df.index[::-1])
