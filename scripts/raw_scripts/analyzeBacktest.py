@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import pandas_ta as ta
 import numpy as np
 import code
+import datetime
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -120,6 +121,68 @@ def prophetCross(data, fast, slow, args, MA = 'simple'):
     #return signal
 
 def performance(data, start_value = 1000):
+    # change in stock value
+    data['percentChange'] = data['y']/data['y'].shift(1)
+    # benchmarking
+    data.loc[0, 'benchmarkValue'] = start_value
+    for i in range(1, len(data)):
+        data['benchmarkValue'][i] = data['benchmarkValue'][i-1]*data['percentChange'][i]
+    # logic for position of strategy
+    data.loc[0, 'position'] = 'in'
+    data.loc[data['buy'] == True, 'position'] = 'in'
+    data.loc[data['sell'] == True, 'position'] = 'out'
+    data['position'] = data['position'].ffill()
+    data.loc[0, 'stratValue'] = start_value
+    # default values to track gains for taxes
+    prev_in_value = start_value
+    total_losses = 0
+    last_buy_date = data['ds'][0]
+    buy_sell_day_diff = []
+    for i in range(1, len(data)):
+        if data['position'][i] == 'in':
+            data['stratValue'][i] = data['stratValue'][i-1]*data['percentChange'][i]
+            # if last value was out
+            if data['position'][i-1] == 'out':
+                last_buy_date = data['ds'][i]
+        # else ie is 'out'
+        else:
+            # if previous value was in, then get realized return
+            if data['position'][i-1] == 'in':
+                # realized gains/losses
+                realized_return = data['stratValue'][i-1] - prev_in_value
+                sell_date = data['ds'][i]
+                buy_sell_day_diff += [sell_date - last_buy_date]
+                # if positive then taxes
+                if realized_return > 0:
+                    taxes = realized_return*.22
+                    # subtract taxes
+                    data['stratValue'][i] = data['stratValue'][i-1] - taxes
+                    # track prev in value
+                    prev_in_value = data['stratValue'][i]
+                else:
+                    # because loss was negative carry over value without doing anything
+                    data['stratValue'][i] = data['stratValue'][i-1]
+                    prev_in_value = data['stratValue'][i]
+                    # track total loss for tax harvesting
+                    total_losses += realized_return
+            else:
+                data['stratValue'][i] = data['stratValue'][i-1]
+
+    # count number of changes
+    data.loc[0, 'grp'] = 1
+    for i in range(1, len(data)):
+        if data['position'][i] != data['position'][i-1]:
+            data.loc[i, 'grp'] = 1
+        else:
+            data.loc[i, 'grp'] = data.loc[i-1, 'grp'] + 1
+    grpOneDf = data[data['grp'] == 1]
+    grpOneDf['profit'] = grpOneDf['stratValue'] - grpOneDf['stratValue'].shift(1)
+    grpOneDf.loc[grpOneDf['position'] == 'in', 'profit'] = pd.NA
+    # put grpOneDf profit back into data
+    profitIndex = grpOneDf[grpOneDf['profit'].notna()].index
+    data.loc[profitIndex, 'profit'] = grpOneDf.loc[profitIndex, 'profit']
+
+def buyOnlyPerformance(data, start_value = 1000):
     # change in stock value
     data['percentChange'] = data['y']/data['y'].shift(1)
     # benchmarking
