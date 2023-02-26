@@ -187,19 +187,31 @@ def buyOnlyPerformance(data, start_value = 1000):
     data['percentChange'] = data['y']/data['y'].shift(1)
     # benchmarking
     data.loc[0, 'benchmarkValue'] = start_value
+    # daily dollar increase
+    dollar_increase = 16.6
     for i in range(1, len(data)):
-        data['benchmarkValue'][i] = data['benchmarkValue'][i-1]*data['percentChange'][i]
+        data['benchmarkValue'][i] = data['benchmarkValue'][i-1]*data['percentChange'][i] + dollar_increase # add monday every day
     # logic for position of strategy
     data.loc[0, 'position'] = 'in'
     data.loc[data['buy'] == True, 'position'] = 'in'
     data.loc[data['sell'] == True, 'position'] = 'out'
     data['position'] = data['position'].ffill()
     data.loc[0, 'stratValue'] = start_value
+    # default principal val
+    principal_value = 0
     for i in range(1, len(data)):
+        # increase value of current day by percent change
+        data['stratValue'][i] = data['stratValue'][i-1]*data['percentChange'][i]
+        # add dollar increase to princiapl
+        principal_value += dollar_increase
+        # if original strat is in
         if data['position'][i] == 'in':
-            data['stratValue'][i] = data['stratValue'][i-1]*data['percentChange'][i]
-        else:
-            data['stratValue'][i] = data['stratValue'][i-1]
+            # and previous position was out
+            if data['position'][i-1] == 'out':
+                # then add principal value
+                data['stratValue'][i] = data['stratValue'][i] + principal_value
+                # reset principle value
+                principal_value = 0
     # count number of changes
     data.loc[0, 'grp'] = 1
     for i in range(1, len(data)):
@@ -223,6 +235,7 @@ def main():
     df = df.reset_index(drop = True)
     prophetCross(df, fast = 3, slow = 5, args = args, MA = 'simple')
     performance(df, start_value = 1000)
+    #buyOnlyPerformance(df, start_value = 100000)
     print(df[['stratValue', 'benchmarkValue']])
     plt.plot('ds', 'benchmarkValue', data = df)
     plt.plot('ds', 'stratValue', data = df)
